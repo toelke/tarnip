@@ -35,7 +35,6 @@ fn main() {
         .unwrap();
 
     while let Ok(packet) = cap.next_packet() {
-        let frame = ethernet_input(&packet);
-        info!("received packet! {:?}", frame);
+        ethernet_input(&packet);
     }
 }

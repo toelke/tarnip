@@ -25,6 +25,11 @@ impl<'a> EthernetFrame<'a> {
     }
 }
 
-pub fn ethernet_input(data: &[u8]) -> EthernetFrame {
-    EthernetFrame::from_u8(data)
+pub fn ethernet_input(data: &[u8]) -> () {
+    let frame = EthernetFrame::from_u8(data);
+    match frame.header.ether_type {
+        _ => {
+            println!("Unknown ethertype {:04x}", frame.header.ether_type);
+        }
+    }
 }
