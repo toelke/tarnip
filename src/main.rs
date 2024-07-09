@@ -1,11 +1,18 @@
 use log::*;
 use pcap::Capture;
 use pcap::Device;
+use clap::Parser;
 
-fn get_device() -> Option<Device> {
+#[derive(Parser, Debug)]
+struct Cli {
+    #[clap(short, long, default_value = "eth0")]
+    interface: String,
+}
+
+fn get_device(interface: String) -> Option<Device> {
     for device in Device::list().unwrap() {
         info!("device {:?}", device);
-        if device.name == "eth0" {
+        if device.name == interface {
             return Some(device);
         }
     }
@@ -14,7 +21,9 @@ fn get_device() -> Option<Device> {
 
 fn main() {
     stderrlog::new().module(module_path!()).verbosity(5).init().unwrap();
-    let device = get_device().unwrap();
+    let args = Cli::parse();
+
+    let device = get_device(args.interface).unwrap();
     let mut cap = Capture::from_device(device)
         .unwrap()
         .promisc(true)
