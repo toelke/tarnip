@@ -2,11 +2,21 @@ use log::*;
 use pcap::Capture;
 use pcap::Device;
 use clap::Parser;
+use zerocopy::FromBytes;
+use zerocopy::Immutable;
 
 #[derive(Parser, Debug)]
 struct Cli {
     #[clap(short, long, default_value = "eth0")]
     interface: String,
+}
+
+#[derive(Debug, FromBytes, Immutable,)]
+#[repr(C)]
+struct EthernetFrame {
+    destination: [u8; 6],
+    source: [u8; 6],
+    ether_type: u16,
 }
 
 fn get_device(interface: String) -> Option<Device> {
@@ -32,6 +42,7 @@ fn main() {
         .unwrap();
 
     while let Ok(packet) = cap.next_packet() {
-        info!("received packet! {:?}", packet);
+        let (frame, rest) = <[EthernetFrame]>::ref_from_prefix_with_elems(&packet, 1).unwrap();
+        info!("received packet! {:?} {:?}", frame, rest);
     }
 }

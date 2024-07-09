@@ -402,6 +402,7 @@ dependencies = [
  "log",
  "pcap",
  "stderrlog",
+ "zerocopy",
 ]
 
 [[package]]
@@ -644,3 +645,23 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "zerocopy"
+version = "0.8.0-alpha.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a5fe242a39bc4f8b8d808be6314c0f0e5e499a902c44e704f3c86a89f7a7c64"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.0-alpha.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76fc519c421ad48c6c8ba02cee449398d54276c839887f9f3562d1862b43b91c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
