@@ -2,6 +2,7 @@ use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 
+use crate::arp::arp_input;
 use crate::ip4::ip4_input;
 
 #[derive(Debug, FromBytes, Immutable)]
@@ -40,6 +41,7 @@ pub fn ethernet_input(data: &[u8]) -> () {
     }
     match frame.header.ether_type.get() {
         0x0800 => ip4_input(&frame),
+        0x0806 => arp_input(&frame),
         _ => {
             println!("Unknown ethertype {:04x}", frame.header.ether_type);
         }

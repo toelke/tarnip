@@ -5,6 +5,7 @@ use pcap::Device;
 
 mod ethernet;
 mod ip4;
+mod arp;
 use crate::ethernet::ethernet_input;
 
 #[derive(Parser, Debug)]
