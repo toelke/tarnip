@@ -1,7 +1,8 @@
+use clap::Parser;
 use log::*;
 use pcap::Capture;
 use pcap::Device;
-use clap::Parser;
+use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 
@@ -11,12 +12,12 @@ struct Cli {
     interface: String,
 }
 
-#[derive(Debug, FromBytes, Immutable,)]
+#[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
 struct EthernetFrame {
     destination: [u8; 6],
     source: [u8; 6],
-    ether_type: u16,
+    ether_type: U16,
 }
 
 fn get_device(interface: String) -> Option<Device> {
