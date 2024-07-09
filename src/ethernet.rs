@@ -2,6 +2,8 @@ use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 
+use crate::ip4::ip4_input;
+
 #[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
 struct EthernetHeader {
@@ -27,7 +29,8 @@ impl<'a> EthernetFrame<'a> {
 
 pub fn ethernet_input(data: &[u8]) -> () {
     let frame = EthernetFrame::from_u8(data);
-    match frame.header.ether_type {
+    match frame.header.ether_type.get() {
+        0x0800 => ip4_input(&frame),
         _ => {
             println!("Unknown ethertype {:04x}", frame.header.ether_type);
         }
