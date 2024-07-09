@@ -29,6 +29,15 @@ impl<'a> EthernetFrame<'a> {
 
 pub fn ethernet_input(data: &[u8]) -> () {
     let frame = EthernetFrame::from_u8(data);
+    match frame.header.destination {
+        [0xaa, 0, 0, 0, 0, 1] => {}
+        [51, 51, 255, 0, 18, 52] => {}
+        [0xff, 0xff, 0xff, 0xff, 0xff, 0xff] => {}
+        _ => {
+            println!("Frame not for me: {:?}", frame.header.destination);
+            return;
+        }
+    }
     match frame.header.ether_type.get() {
         0x0800 => ip4_input(&frame),
         _ => {
