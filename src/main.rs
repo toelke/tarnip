@@ -2,6 +2,7 @@ use clap::Parser;
 use log::*;
 use pcap::Capture;
 use pcap::Device;
+use pcap::Packet;
 use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
@@ -14,10 +15,16 @@ struct Cli {
 
 #[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
-struct EthernetFrame {
+struct EthernetHeader {
     destination: [u8; 6],
     source: [u8; 6],
     ether_type: U16,
+}
+
+#[derive(Debug)]
+struct EthernetFrame<'a> {
+    header: &'a EthernetHeader,
+    payload: &'a [u8],
 }
 
 fn get_device(interface: String) -> Option<Device> {
@@ -30,6 +37,14 @@ fn get_device(interface: String) -> Option<Device> {
     None
 }
 
+impl<'a> EthernetFrame<'a> {
+    fn from_u8(data: &'a Packet) -> Self {
+        let ([header], payload) = <[EthernetHeader]>::ref_from_prefix_with_elems(data, 1).unwrap() else {
+            todo!() // this cannot happen, the element-count 1 ensures it
+        };
+        Self { header, payload }
+    }
+}
 fn main() {
     stderrlog::new().module(module_path!()).verbosity(5).init().unwrap();
     let args = Cli::parse();
@@ -43,7 +58,7 @@ fn main() {
         .unwrap();
 
     while let Ok(packet) = cap.next_packet() {
-        let (frame, rest) = <[EthernetFrame]>::ref_from_prefix_with_elems(&packet, 1).unwrap();
-        info!("received packet! {:?} {:?}", frame, rest);
+        let frame = EthernetFrame::from_u8(&packet);
+        info!("received packet! {:?}", frame);
     }
 }
