@@ -58,8 +58,38 @@ impl<'a> IP4Stack<'a> {
         Self { driver }
     }
 
-    fn icmp_input(&self, header: &IP4Header, payload: &[u8]) {
+    fn icmp_input(&self, eth_header: &EthernetHeader, ip_header: &IP4Header, payload: &[u8]) {
         let (icmp_header, payload) = ICMPHeader::ref_from_prefix(&payload).unwrap();
+        match icmp_header.icmp_type {
+            8 => {
+                let mut reply = Vec::<u8>::new();
+                reply.extend_from_slice(EthernetHeader{
+                    destination: eth_header.source,
+                    source: eth_header.destination,
+                    ether_type: eth_header.ether_type,
+                }.as_bytes());
+                reply.extend_from_slice(IP4Header{
+                    version_ihl: 0x45,
+                    dscp_ecn: 0,
+                    total_length: U16::new(20 + 4 + payload.len() as u16),
+                    identification: U16::new(0),
+                    flags_fragment_offset: U16::new(0),
+                    ttl: 64,
+                    protocol: 1,
+                    checksum: U16::new(0),
+                    source_ip: ip_header.destination_ip,
+                    destination_ip: ip_header.source_ip,
+                }.as_bytes());
+                reply.extend_from_slice(ICMPHeader{
+                    icmp_type: 0,
+                    icmp_code: 0,
+                    checksum: U16::new(0),
+                }.as_bytes());
+                reply.extend_from_slice(payload);
+                self.driver.borrow_mut().sendpacket(&reply);
+            }
+            _ => {}
+        }
     }
 
     pub fn ip4_input(&self, frame: &EthernetFrame) {
@@ -68,7 +98,7 @@ impl<'a> IP4Stack<'a> {
             return;
         }
         match header.protocol {
-            1 => self.icmp_input(header, payload),
+            1 => self.icmp_input(frame.header, header, payload),
             _ => { warn!("Unimplemented protocol {}", header.protocol) }
         }
     }
