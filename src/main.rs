@@ -1,5 +1,4 @@
 use clap::Parser;
-use log::*;
 
 mod arp;
 mod ethernet;
