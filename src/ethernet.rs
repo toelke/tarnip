@@ -4,7 +4,7 @@ use zerocopy::Immutable;
 use zerocopy::IntoBytes;
 
 use crate::arp::ArpStack;
-use crate::ip4::ip4_input;
+use crate::ip4::IP4Stack;
 use crate::pcap_driver::PcapDriver;
 use log::*;
 use std::cell::RefCell;
@@ -37,6 +37,7 @@ impl<'a> EthernetFrame<'a> {
 pub struct EthernetStack<'a> {
     driver: Rc<RefCell<&'a mut PcapDriver>>,
     arp: ArpStack<'a>,
+    ip4: IP4Stack<'a>,
 }
 
 impl<'a> EthernetStack<'a> {
@@ -44,6 +45,7 @@ impl<'a> EthernetStack<'a> {
         Self {
             driver: driver.clone(),
             arp: ArpStack::new(driver.clone()),
+            ip4: IP4Stack::new(driver.clone()),
         }
     }
 
@@ -58,7 +60,7 @@ impl<'a> EthernetStack<'a> {
             }
         }
         match frame.header.ether_type.get() {
-            0x0800 => ip4_input(&frame),
+            0x0800 => self.ip4.ip4_input(&frame),
             0x0806 => self.arp.arp_input(&frame),
             _ => {
                 warn!("Unknown ethertype {:04x}", frame.header.ether_type);
