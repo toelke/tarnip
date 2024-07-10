@@ -23,7 +23,7 @@ pub struct EthernetHeader {
 #[derive(FromPrimitive, Debug)]
 enum EtherType {
     IPv4 = 0x0800,
-    ARP = 0x0806,
+    Arp = 0x0806,
     IPv6 = 0x86dd,
 }
 
@@ -70,7 +70,7 @@ impl<'a> EthernetStack<'a> {
         }
         let reply = match FromPrimitive::from_u16(frame.header.ether_type.get()) {
             Some(EtherType::IPv4) => self.ip4.ip4_input(&frame),
-            Some(EtherType::ARP) => self.arp.arp_input(&frame),
+            Some(EtherType::Arp) => self.arp.arp_input(&frame),
             _ => {
                 warn!("Unknown ethertype {:04x}", frame.header.ether_type);
                 None

@@ -29,8 +29,7 @@ struct ArpPayload {
     target_ip: [u8; 4],
 }
 
-pub struct ArpStack {
-}
+pub struct ArpStack {}
 
 impl ArpStack {
     pub fn new() -> Self {

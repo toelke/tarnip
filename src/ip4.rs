@@ -47,26 +47,25 @@ impl IP4Header {
 #[derive(Debug, FromPrimitive)]
 #[repr(u8)]
 enum Protocol {
-    ICMP = 1,
-    TCP = 6,
-    UDP = 17,
+    Icmp = 1,
+    Tcp = 6,
+    Udp = 17,
 }
 
-pub struct IP4Stack {
-}
+pub struct IP4Stack {}
 
 impl IP4Stack {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 
     pub fn ip4_input(&self, frame: &EthernetFrame) -> Option<Vec<u8>> {
-        let (ip4_header, payload) = IP4Header::ref_from_prefix(&frame.payload).unwrap();
+        let (ip4_header, payload) = IP4Header::ref_from_prefix(frame.payload).unwrap();
         if ip4_header.version_ihl & 0xf != 5 {
             return None;
         }
         let reply = match FromPrimitive::from_u8(ip4_header.protocol) {
-            Some(Protocol::ICMP) => icmp_input(payload),
+            Some(Protocol::Icmp) => icmp_input(payload),
             _ => {
                 warn!("Unimplemented protocol {}", ip4_header.protocol);
                 None

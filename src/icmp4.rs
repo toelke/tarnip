@@ -15,7 +15,7 @@ struct ICMPHeader {
 impl ICMPHeader {
     fn calc_checksum(&self, rest: &[u8]) -> U16 {
         let mut sum = 0u32;
-        sum += u32::from(u32::from(self.icmp_type) << 8 | u32::from(self.icmp_code));
+        sum += u32::from(self.icmp_type) << 8 | u32::from(self.icmp_code);
         for i in (0..rest.len()).step_by(2) {
             sum += u32::from(rest[i]) << 8 | u32::from(rest[i + 1]);
         }
@@ -27,7 +27,7 @@ impl ICMPHeader {
 }
 
 pub fn icmp_input(payload: &[u8]) -> Option<Vec<u8>> {
-    let (icmp_header, payload) = ICMPHeader::ref_from_prefix(&payload).unwrap();
+    let (icmp_header, payload) = ICMPHeader::ref_from_prefix(payload).unwrap();
     match icmp_header.icmp_type {
         8 => {
             let mut reply = Vec::<u8>::new();
