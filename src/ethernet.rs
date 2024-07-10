@@ -45,16 +45,16 @@ impl<'a> EthernetFrame<'a> {
 
 pub struct EthernetStack<'a> {
     driver: Rc<RefCell<&'a mut PcapDriver>>,
-    arp: ArpStack<'a>,
-    ip4: IP4Stack<'a>,
+    arp: ArpStack,
+    ip4: IP4Stack,
 }
 
 impl<'a> EthernetStack<'a> {
     pub fn new(driver: Rc<RefCell<&'a mut PcapDriver>>) -> Self {
         Self {
             driver: driver.clone(),
-            arp: ArpStack::new(driver.clone()),
-            ip4: IP4Stack::new(driver.clone()),
+            arp: ArpStack::new(),
+            ip4: IP4Stack::new(),
         }
     }
 
@@ -68,12 +68,26 @@ impl<'a> EthernetStack<'a> {
                 return;
             }
         }
-        match FromPrimitive::from_u16(frame.header.ether_type.get()) {
+        let reply = match FromPrimitive::from_u16(frame.header.ether_type.get()) {
             Some(EtherType::IPv4) => self.ip4.ip4_input(&frame),
             Some(EtherType::ARP) => self.arp.arp_input(&frame),
             _ => {
                 warn!("Unknown ethertype {:04x}", frame.header.ether_type);
+                None
             }
+        };
+        if let Some(reply) = reply {
+            let mut eth_reply = Vec::<u8>::new();
+            eth_reply.extend_from_slice(
+                EthernetHeader {
+                    destination: frame.header.source,
+                    source: [0xaa, 0, 0, 0, 0, 1],
+                    ether_type: frame.header.ether_type,
+                }
+                .as_bytes(),
+            );
+            eth_reply.extend_from_slice(&reply);
+            self.driver.borrow_mut().sendpacket(&eth_reply);
         }
     }
 }

@@ -2,6 +2,7 @@ use clap::Parser;
 
 mod arp;
 mod ethernet;
+mod icmp4;
 mod ip4;
 mod pcap_driver;
 use crate::pcap_driver::PcapDriver;

@@ -1,16 +1,14 @@
 use crate::ethernet::EthernetFrame;
-use crate::ethernet::EthernetHeader;
-use crate::pcap_driver::PcapDriver;
 use log::*;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use std::cell::RefCell;
-use std::rc::Rc;
 use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 use zerocopy::IntoBytes;
 use zerocopy::KnownLayout;
+
+use crate::icmp4::icmp_input;
 
 #[derive(Debug, FromBytes, Immutable, KnownLayout, IntoBytes)]
 #[repr(C)]
@@ -46,28 +44,6 @@ impl IP4Header {
     }
 }
 
-#[derive(Debug, FromBytes, Immutable, KnownLayout, IntoBytes)]
-#[repr(C)]
-struct ICMPHeader {
-    icmp_type: u8,
-    icmp_code: u8,
-    checksum: U16,
-}
-
-impl ICMPHeader {
-    fn calc_checksum(&self, rest: &[u8]) -> U16 {
-        let mut sum = 0u32;
-        sum += u32::from(u32::from(self.icmp_type) << 8 | u32::from(self.icmp_code));
-        for i in (0..rest.len()).step_by(2) {
-            sum += u32::from(rest[i]) << 8 | u32::from(rest[i + 1]);
-        }
-        while sum > 0xffff {
-            sum = (sum & 0xffff) + (sum >> 16);
-        }
-        U16::new(!sum as u16)
-    }
-}
-
 #[derive(Debug, FromPrimitive)]
 #[repr(u8)]
 enum Protocol {
@@ -76,66 +52,45 @@ enum Protocol {
     UDP = 17,
 }
 
-pub struct IP4Stack<'a> {
-    driver: Rc<RefCell<&'a mut PcapDriver>>,
+pub struct IP4Stack {
 }
 
-impl<'a> IP4Stack<'a> {
-    pub fn new(driver: Rc<RefCell<&'a mut PcapDriver>>) -> Self {
-        Self { driver }
+impl IP4Stack {
+    pub fn new() -> Self {
+        Self { }
     }
 
-    fn icmp_input(&self, eth_header: &EthernetHeader, ip_header: &IP4Header, payload: &[u8]) {
-        let (icmp_header, payload) = ICMPHeader::ref_from_prefix(&payload).unwrap();
-        match icmp_header.icmp_type {
-            8 => {
-                let mut reply = Vec::<u8>::new();
-                reply.extend_from_slice(
-                    EthernetHeader {
-                        destination: eth_header.source,
-                        source: eth_header.destination,
-                        ether_type: eth_header.ether_type,
-                    }
-                    .as_bytes(),
-                );
-                let mut ip4header = IP4Header {
-                    version_ihl: 0x45,
-                    dscp_ecn: 0,
-                    total_length: U16::new(20 + 4 + payload.len() as u16),
-                    identification: U16::new(0),
-                    flags_fragment_offset: U16::new(0),
-                    ttl: 64,
-                    protocol: 1,
-                    checksum: U16::new(0),
-                    source_ip: ip_header.destination_ip,
-                    destination_ip: ip_header.source_ip,
-                };
-                ip4header.checksum = ip4header.calc_checksum();
-                reply.extend_from_slice(ip4header.as_bytes());
-                let mut icmpheader = ICMPHeader {
-                    icmp_type: 0,
-                    icmp_code: 0,
-                    checksum: U16::new(0),
-                };
-                icmpheader.checksum = icmpheader.calc_checksum(payload);
-                reply.extend_from_slice(icmpheader.as_bytes());
-                reply.extend_from_slice(payload);
-                self.driver.borrow_mut().sendpacket(&reply);
-            }
-            _ => {}
+    pub fn ip4_input(&self, frame: &EthernetFrame) -> Option<Vec<u8>> {
+        let (ip4_header, payload) = IP4Header::ref_from_prefix(&frame.payload).unwrap();
+        if ip4_header.version_ihl & 0xf != 5 {
+            return None;
         }
-    }
-
-    pub fn ip4_input(&self, frame: &EthernetFrame) {
-        let (header, payload) = IP4Header::ref_from_prefix(&frame.payload).unwrap();
-        if header.version_ihl & 0xf != 5 {
-            return;
-        }
-        match FromPrimitive::from_u8(header.protocol) {
-            Some(Protocol::ICMP) => self.icmp_input(frame.header, header, payload),
+        let reply = match FromPrimitive::from_u8(ip4_header.protocol) {
+            Some(Protocol::ICMP) => icmp_input(payload),
             _ => {
-                warn!("Unimplemented protocol {}", header.protocol)
+                warn!("Unimplemented protocol {}", ip4_header.protocol);
+                None
             }
+        };
+        if let Some(reply) = reply {
+            let mut ip4_reply = Vec::<u8>::new();
+            let mut ip4_reply_header = IP4Header {
+                version_ihl: 0x45,
+                dscp_ecn: 0,
+                total_length: U16::new(20 + reply.len() as u16),
+                identification: U16::new(0),
+                flags_fragment_offset: U16::new(0),
+                ttl: 64,
+                protocol: 1,
+                checksum: U16::new(0),
+                source_ip: ip4_header.destination_ip,
+                destination_ip: ip4_header.source_ip,
+            };
+            ip4_reply_header.checksum = ip4_reply_header.calc_checksum();
+            ip4_reply.extend_from_slice(ip4_reply_header.as_bytes());
+            ip4_reply.extend_from_slice(&reply);
+            return Some(ip4_reply);
         }
+        None
     }
 }
