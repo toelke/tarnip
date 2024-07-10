@@ -7,6 +7,8 @@ use crate::arp::ArpStack;
 use crate::ip4::IP4Stack;
 use crate::pcap_driver::PcapDriver;
 use log::*;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -16,6 +18,13 @@ pub struct EthernetHeader {
     pub destination: [u8; 6],
     pub source: [u8; 6],
     pub ether_type: U16,
+}
+
+#[derive(FromPrimitive, Debug)]
+enum EtherType {
+    IPv4 = 0x0800,
+    ARP = 0x0806,
+    IPv6 = 0x86dd,
 }
 
 #[derive(Debug)]
@@ -59,9 +68,9 @@ impl<'a> EthernetStack<'a> {
                 return;
             }
         }
-        match frame.header.ether_type.get() {
-            0x0800 => self.ip4.ip4_input(&frame),
-            0x0806 => self.arp.arp_input(&frame),
+        match FromPrimitive::from_u16(frame.header.ether_type.get()) {
+            Some(EtherType::IPv4) => self.ip4.ip4_input(&frame),
+            Some(EtherType::ARP) => self.arp.arp_input(&frame),
             _ => {
                 warn!("Unknown ethertype {:04x}", frame.header.ether_type);
             }
