@@ -4,6 +4,7 @@ use zerocopy::Immutable;
 
 use crate::arp::arp_input;
 use crate::ip4::ip4_input;
+use log::*;
 
 #[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
@@ -35,7 +36,7 @@ pub fn ethernet_input(data: &[u8]) -> () {
         [51, 51, 255, 0, 18, 52] => {}
         [0xff, 0xff, 0xff, 0xff, 0xff, 0xff] => {}
         _ => {
-            println!("Frame not for me: {:?}", frame.header.destination);
+            debug!("Frame not for me: {:?}", frame.header.destination);
             return;
         }
     }
@@ -43,7 +44,7 @@ pub fn ethernet_input(data: &[u8]) -> () {
         0x0800 => ip4_input(&frame),
         0x0806 => arp_input(&frame),
         _ => {
-            println!("Unknown ethertype {:04x}", frame.header.ether_type);
+            warn!("Unknown ethertype {:04x}", frame.header.ether_type);
         }
     }
 }
