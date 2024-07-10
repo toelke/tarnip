@@ -27,12 +27,45 @@ struct IP4Header {
     destination_ip: [u8; 4],
 }
 
+impl IP4Header {
+    fn calc_checksum(&self) -> U16 {
+        let mut sum = 0u32;
+        sum += u32::from(self.version_ihl) << 8 | u32::from(self.dscp_ecn);
+        sum += u32::from(self.total_length.get());
+        sum += u32::from(self.identification.get());
+        sum += u32::from(self.flags_fragment_offset.get());
+        sum += (u32::from(self.ttl)) << 8 | u32::from(self.protocol);
+        sum += u32::from(self.source_ip[0]) << 8 | u32::from(self.source_ip[1]);
+        sum += u32::from(self.source_ip[2]) << 8 | u32::from(self.source_ip[3]);
+        sum += u32::from(self.destination_ip[0]) << 8 | u32::from(self.destination_ip[1]);
+        sum += u32::from(self.destination_ip[2]) << 8 | u32::from(self.destination_ip[3]);
+        while sum > 0xffff {
+            sum = (sum & 0xffff) + (sum >> 16);
+        }
+        U16::new(!sum as u16)
+    }
+}
+
 #[derive(Debug, FromBytes, Immutable, KnownLayout, IntoBytes)]
 #[repr(C)]
 struct ICMPHeader {
     icmp_type: u8,
     icmp_code: u8,
     checksum: U16,
+}
+
+impl ICMPHeader {
+    fn calc_checksum(&self, rest: &[u8]) -> U16 {
+        let mut sum = 0u32;
+        sum += u32::from(u32::from(self.icmp_type) << 8 | u32::from(self.icmp_code));
+        for i in (0..rest.len()).step_by(2) {
+            sum += u32::from(rest[i]) << 8 | u32::from(rest[i + 1]);
+        }
+        while sum > 0xffff {
+            sum = (sum & 0xffff) + (sum >> 16);
+        }
+        U16::new(!sum as u16)
+    }
 }
 
 #[derive(Debug, FromPrimitive)]
@@ -77,15 +110,15 @@ impl<'a> IP4Stack<'a> {
                     source_ip: ip_header.destination_ip,
                     destination_ip: ip_header.source_ip,
                 };
+                ip4header.checksum = ip4header.calc_checksum();
                 reply.extend_from_slice(ip4header.as_bytes());
-                reply.extend_from_slice(
-                    ICMPHeader {
-                        icmp_type: 0,
-                        icmp_code: 0,
-                        checksum: U16::new(0),
-                    }
-                    .as_bytes(),
-                );
+                let mut icmpheader = ICMPHeader {
+                    icmp_type: 0,
+                    icmp_code: 0,
+                    checksum: U16::new(0),
+                };
+                icmpheader.checksum = icmpheader.calc_checksum(payload);
+                reply.extend_from_slice(icmpheader.as_bytes());
                 reply.extend_from_slice(payload);
                 self.driver.borrow_mut().sendpacket(&reply);
             }
