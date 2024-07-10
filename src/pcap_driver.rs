@@ -1,8 +1,10 @@
-use crate::ethernet::ethernet_input;
+use crate::ethernet::EthernetStack;
 use log::*;
 use pcap::Active;
 use pcap::Capture;
 use pcap::Device;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 fn get_device(interface: String) -> Option<Device> {
     for device in Device::list().unwrap() {
@@ -15,24 +17,38 @@ fn get_device(interface: String) -> Option<Device> {
 }
 
 pub struct PcapDriver {
-    cap: Capture<Active>,
+    cap: Rc<RefCell<Capture<Active>>>,
 }
 
 impl PcapDriver {
     pub fn new(interface: String) -> Self {
         let device = get_device(interface).unwrap();
-        let cap = Capture::from_device(device)
-            .unwrap()
-            .promisc(true)
-            .immediate_mode(true)
-            .open()
-            .unwrap();
+        let cap = Rc::new(RefCell::new(
+            Capture::from_device(device)
+                .unwrap()
+                .promisc(true)
+                .immediate_mode(true)
+                .open()
+                .unwrap(),
+        ));
         Self { cap }
     }
 
     pub fn run(&mut self) {
-        while let Ok(packet) = self.cap.next_packet() {
-            ethernet_input(&packet);
+        let me = Rc::new(RefCell::new(self));
+        let ethernet_stack = EthernetStack::new(me.clone());
+        loop {
+            let packet = {
+                let me = me.borrow();
+                let mut cap = me.cap.borrow_mut();
+                cap.next_packet().unwrap().data[..].to_vec()
+            };
+
+            ethernet_stack.ethernet_input(&packet);
         }
+    }
+
+    pub fn sendpacket(&mut self, packet: &[u8]) {
+        self.cap.borrow_mut().sendpacket(packet).unwrap();
     }
 }
