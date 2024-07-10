@@ -29,7 +29,7 @@ impl<'a> EthernetFrame<'a> {
     }
 }
 
-pub fn ethernet_input(data: &[u8]) -> () {
+pub fn ethernet_input(data: &[u8]) {
     let frame = EthernetFrame::from_u8(data);
     match frame.header.destination {
         [0xaa, 0, 0, 0, 0, 1] => {}

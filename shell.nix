@@ -7,6 +7,7 @@ pkgs.mkShell {
     pkgs.rustc
     pkgs.libpcap
     pkgs.rustfmt
+    pkgs.clippy
   ];
   shellHook = '''';
 }

@@ -5,8 +5,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
-use zerocopy::IntoBytes;
 use zerocopy::Immutable;
+use zerocopy::IntoBytes;
 use zerocopy::KnownLayout;
 
 #[derive(Debug, FromPrimitive)]
@@ -33,7 +33,7 @@ struct ArpPayload {
 fn handle_request(payload: &ArpPayload) {
     match payload.target_ip {
         [192, 168, 3, 150] => {
-            let arp_reply = ArpPayload{
+            let arp_reply = ArpPayload {
                 hardware_type: payload.hardware_type,
                 protocol_type: payload.protocol_type,
                 hardware_size: payload.hardware_size,
@@ -69,7 +69,7 @@ pub fn arp_input(frame: &EthernetFrame) {
         })
         .unwrap();
     match FromPrimitive::from_u16(payload.opcode.get()) {
-        Some(Opcode::Request) => handle_request(&payload),
+        Some(Opcode::Request) => handle_request(payload),
         Some(Opcode::Reply) => info!("ARP Reply"),
         None => info!("ARP Unknown"),
     }
