@@ -3,9 +3,9 @@ use log::*;
 use pcap::Capture;
 use pcap::Device;
 
+mod arp;
 mod ethernet;
 mod ip4;
-mod arp;
 use crate::ethernet::ethernet_input;
 
 #[derive(Parser, Debug)]

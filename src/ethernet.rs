@@ -9,9 +9,9 @@ use log::*;
 #[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
 pub struct EthernetHeader {
-    destination: [u8; 6],
-    source: [u8; 6],
-    ether_type: U16,
+    pub destination: [u8; 6],
+    pub source: [u8; 6],
+    pub ether_type: U16,
 }
 
 #[derive(Debug)]

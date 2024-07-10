@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.9", features = ["derive"] }
 log = "0.4.22"
+num-derive = "0.4.2"
+num-traits = "0.2.19"
 pcap = "2.0.0"
 stderrlog = "0.6.0"
 zerocopy = { version = "0.8.0-alpha.16", features = ["derive"] }

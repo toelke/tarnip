@@ -6,6 +6,7 @@ pkgs.mkShell {
     pkgs.cargo
     pkgs.rustc
     pkgs.libpcap
+    pkgs.rustfmt
   ];
   shellHook = '''';
 }
