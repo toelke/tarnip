@@ -8,7 +8,7 @@ use log::*;
 
 #[derive(Debug, FromBytes, Immutable)]
 #[repr(C)]
-struct EthernetHeader {
+pub struct EthernetHeader {
     destination: [u8; 6],
     source: [u8; 6],
     ether_type: U16,
@@ -16,8 +16,8 @@ struct EthernetHeader {
 
 #[derive(Debug)]
 pub struct EthernetFrame<'a> {
-    header: &'a EthernetHeader,
-    payload: &'a [u8],
+    pub header: &'a EthernetHeader,
+    pub payload: &'a [u8],
 }
 
 impl<'a> EthernetFrame<'a> {
@@ -36,7 +36,6 @@ pub fn ethernet_input(data: &[u8]) -> () {
         [51, 51, 255, 0, 18, 52] => {}
         [0xff, 0xff, 0xff, 0xff, 0xff, 0xff] => {}
         _ => {
-            debug!("Frame not for me: {:?}", frame.header.destination);
             return;
         }
     }
