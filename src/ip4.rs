@@ -9,6 +9,7 @@ use zerocopy::IntoBytes;
 use zerocopy::KnownLayout;
 
 use crate::icmp4::icmp_input;
+use crate::udp::UdpStack;
 
 #[derive(Debug, FromBytes, Immutable, KnownLayout, IntoBytes)]
 #[repr(C)]
@@ -52,11 +53,13 @@ enum Protocol {
     Udp = 17,
 }
 
-pub struct IP4Stack {}
+pub struct IP4Stack<'a> {
+    udp_stack: &'a mut UdpStack,
+}
 
-impl IP4Stack {
-    pub fn new() -> Self {
-        Self {}
+impl<'a> IP4Stack<'a> {
+    pub fn new(udp_stack: &'a mut UdpStack) -> Self {
+        Self {udp_stack}
     }
 
     pub fn ip4_input(&self, frame: &EthernetFrame) -> Option<Vec<u8>> {
@@ -66,6 +69,7 @@ impl IP4Stack {
         }
         let reply = match FromPrimitive::from_u8(ip4_header.protocol) {
             Some(Protocol::Icmp) => icmp_input(payload),
+            Some(Protocol::Udp) => self.udp_stack.udp_input(payload),
             _ => {
                 warn!("Unimplemented protocol {}", ip4_header.protocol);
                 None
@@ -80,7 +84,7 @@ impl IP4Stack {
                 identification: U16::new(0),
                 flags_fragment_offset: U16::new(0),
                 ttl: 64,
-                protocol: 1,
+                protocol: ip4_header.protocol,
                 checksum: U16::new(0),
                 source_ip: ip4_header.destination_ip,
                 destination_ip: ip4_header.source_ip,
