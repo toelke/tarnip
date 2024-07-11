@@ -1,4 +1,3 @@
-use crate::ethernet::EthernetStack;
 use log::*;
 use pcap::Active;
 use pcap::Capture;
@@ -34,18 +33,11 @@ impl PcapDriver {
         Self { cap }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Vec<u8> {
         let me = Rc::new(RefCell::new(self));
-        let ethernet_stack = EthernetStack::new(me.clone());
-        loop {
-            let packet = {
-                let me = me.borrow();
-                let mut cap = me.cap.borrow_mut();
-                cap.next_packet().unwrap().data[..].to_vec()
-            };
-
-            ethernet_stack.ethernet_input(&packet);
-        }
+        let me = me.borrow();
+        let mut cap = me.cap.borrow_mut();
+        cap.next_packet().unwrap().to_vec()
     }
 
     pub fn sendpacket(&mut self, packet: &[u8]) {
