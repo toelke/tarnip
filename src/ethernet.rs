@@ -2,6 +2,7 @@ use zerocopy::byteorder::network_endian::U16;
 use zerocopy::FromBytes;
 use zerocopy::Immutable;
 use zerocopy::IntoBytes;
+use zerocopy::KnownLayout;
 
 use crate::arp::ArpStack;
 use crate::ip4::IP4Stack;
@@ -12,7 +13,7 @@ use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Debug, FromBytes, Immutable, IntoBytes)]
+#[derive(Debug, FromBytes, Immutable, IntoBytes, KnownLayout)]
 #[repr(C)]
 pub struct EthernetHeader {
     pub destination: [u8; 6],
@@ -36,9 +37,7 @@ pub struct EthernetFrame<'a> {
 
 impl<'a> EthernetFrame<'a> {
     fn from_u8(data: &'a [u8]) -> Self {
-        let ([header], payload) = <[EthernetHeader]>::ref_from_prefix_with_elems(data, 1).unwrap() else {
-            todo!() // this cannot happen, the element-count 1 ensures it
-        };
+        let (header, payload) = EthernetHeader::ref_from_prefix(data).unwrap();
         Self { header, payload }
     }
 }
