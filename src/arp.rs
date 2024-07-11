@@ -58,15 +58,14 @@ impl ArpStack {
     }
 
     pub fn arp_input(&self, frame: &EthernetFrame) -> Option<Vec<u8>> {
-        let (payload, _) = ArpPayload::ref_from_prefix(frame.payload)
-            .map_err(|_| {
-                warn!(
-                    "ARP payload too or too long: {} {:?}",
-                    frame.payload.len(),
-                    frame.payload
-                );
-            })
-            .unwrap();
+        let Ok((payload, _)) = ArpPayload::ref_from_prefix(frame.payload) else {
+            warn!(
+                "ARP payload too or too long: {} {:?}",
+                frame.payload.len(),
+                frame.payload
+            );
+            return None;
+        };
         match FromPrimitive::from_u16(payload.opcode.get()) {
             Some(Opcode::Request) => self.handle_request(payload),
             Some(Opcode::Reply) => {

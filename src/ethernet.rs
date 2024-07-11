@@ -36,9 +36,11 @@ pub struct EthernetFrame<'a> {
 }
 
 impl<'a> EthernetFrame<'a> {
-    fn from_u8(data: &'a [u8]) -> Self {
-        let (header, payload) = EthernetHeader::ref_from_prefix(data).unwrap();
-        Self { header, payload }
+    fn from_u8(data: &'a [u8]) -> Result<Self, String> {
+        let Ok((header, payload)) = EthernetHeader::ref_from_prefix(data) else {
+            return Err("Failed to parse EthernetHeader".to_string());
+        };
+        Ok(Self { header, payload })
     }
 }
 
@@ -58,7 +60,10 @@ impl<'a> EthernetStack<'a> {
     }
 
     pub fn ethernet_input(&self, data: &[u8]) {
-        let frame = EthernetFrame::from_u8(data);
+        let Ok(frame) = EthernetFrame::from_u8(data) else {
+            warn!("Failed to parse EthernetFrame");
+            return;
+        };
         match frame.header.destination {
             [0xaa, 0, 0, 0, 0, 1] => {}
             [51, 51, 255, 0, 18, 52] => {}

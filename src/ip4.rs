@@ -60,7 +60,7 @@ impl IP4Stack {
     }
 
     pub fn ip4_input(&self, frame: &EthernetFrame) -> Option<Vec<u8>> {
-        let (ip4_header, payload) = IP4Header::ref_from_prefix(frame.payload).unwrap();
+        let Ok((ip4_header, payload)) = IP4Header::ref_from_prefix(frame.payload) else { return None };
         if ip4_header.version_ihl & 0xf != 5 {
             return None;
         }

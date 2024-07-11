@@ -27,7 +27,9 @@ impl ICMPHeader {
 }
 
 pub fn icmp_input(payload: &[u8]) -> Option<Vec<u8>> {
-    let (icmp_header, payload) = ICMPHeader::ref_from_prefix(payload).unwrap();
+    let Ok((icmp_header, payload)) = ICMPHeader::ref_from_prefix(payload) else {
+        return None;
+    };
     match icmp_header.icmp_type {
         8 => {
             let mut reply = Vec::<u8>::new();
