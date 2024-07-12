@@ -1,3 +1,4 @@
+use crate::driver::Driver;
 use log::*;
 use pcap::Active;
 use pcap::Capture;
@@ -32,15 +33,17 @@ impl PcapDriver {
         ));
         Self { cap }
     }
+}
 
-    pub fn run(&mut self) -> Vec<u8> {
+impl Driver for PcapDriver {
+    fn get_next_packet_blocking(&mut self) -> Vec<u8> {
         let me = Rc::new(RefCell::new(self));
         let me = me.borrow();
         let mut cap = me.cap.borrow_mut();
         cap.next_packet().unwrap().to_vec()
     }
 
-    pub fn sendpacket(&mut self, packet: &[u8]) {
+    fn sendpacket(&mut self, packet: &[u8]) {
         self.cap.borrow_mut().sendpacket(packet).unwrap();
     }
 }

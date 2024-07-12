@@ -7,7 +7,7 @@ use zerocopy::KnownLayout;
 use crate::arp::ArpStack;
 use crate::ip4::IP4Stack;
 use crate::udp::UdpStack;
-use crate::pcap_driver::PcapDriver;
+use crate::driver::Driver;
 use log::*;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -46,13 +46,13 @@ impl<'a> EthernetFrame<'a> {
 }
 
 pub struct EthernetStack<'a> {
-    driver: Rc<RefCell<&'a mut PcapDriver>>,
+    driver: Rc<RefCell<&'a mut dyn Driver>>,
     arp: ArpStack,
     ip4: IP4Stack<'a>,
 }
 
 impl<'a> EthernetStack<'a> {
-    pub fn new(driver: Rc<RefCell<&'a mut PcapDriver>>, udp_stack: &'a mut UdpStack) -> Self {
+    pub fn new(driver: Rc<RefCell<&'a mut dyn Driver>>, udp_stack: &'a mut UdpStack) -> Self {
         Self {
             driver: driver.clone(),
             arp: ArpStack::new(),
