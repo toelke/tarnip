@@ -309,9 +309,9 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "pcap"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45f1686828a29fd8002fbf9c01506b4b2dd575c2305e1b884da3731abae8b9e0"
+checksum = "fe4d339439e5e7f8ce32d58c2b58d5e304790e66f3aa0bd391dd6a9dc676e054"
 dependencies = [
  "bitflags",
  "errno",
